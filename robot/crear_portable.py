@@ -124,6 +124,14 @@ Doble clic en **`abrir-monitor.bat`**. Se abre el panel:
 
 Mientras trabaja se abren y cierran ventanas de Chrome: **es normal, no las toques.**
 
+## ¿Algo falla?
+
+Abre **`SOLUCION-DE-PROBLEMAS.md`**, en esta misma carpeta. Está ordenado por el mensaje que
+aparece en pantalla. Las dos causas más comunes:
+
+- **No abras `INSTALAR.bat` como Administrador.** Doble clic normal.
+- Tras instalar Python, **cierra todas las ventanas negras y abre una nueva.**
+
 ## Si una empresa no carga
 Es normal y no rompe nada. SUNAT a veces va lento o pide una verificación.
 - El monitor **no se detiene**: sigue con las demás y la reintenta en la próxima vuelta.
@@ -161,6 +169,14 @@ def main() -> int:
     (DESTINO / "INSTALAR.bat").write_text(INSTALAR_BAT, encoding="utf-8")
     (DESTINO / "abrir-monitor.bat").write_text(ABRIR_BAT, encoding="utf-8")
     (DESTINO / "LEEME-PRIMERO.md").write_text(LEEME, encoding="utf-8")
+
+    # La guía de problemas viaja con el paquete: la contadora la necesita justo cuando
+    # algo falla, que es cuando no puede consultar nada.
+    guia = config.RAIZ / "SOLUCION-DE-PROBLEMAS.md"
+    if guia.exists():
+        shutil.copy2(guia, DESTINO / guia.name)
+    else:
+        print("AVISO: no encontre SOLUCION-DE-PROBLEMAS.md; el paquete ira sin la guia.")
 
     zip_path = config.RAIZ / "PORTABLE-CONTADORA.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
