@@ -21,7 +21,10 @@ $script = Join-Path $PSScriptRoot 'robot.py'
 
 # --visible: navegador REAL (no oculto). SUNAT corta el navegador oculto, por eso se usa el visible.
 # La ventana de Chrome aparecera en el escritorio durante la revision; es normal.
-$accion = New-ScheduledTaskAction -Execute $pyw -Argument "`"$script`" --visible --log" -WorkingDirectory $PSScriptRoot
+# -E hace que Python IGNORE las variables PYTHON* del sistema. Es imprescindible aqui:
+# la tarea hereda el entorno de la sesion, y si otro programa dejo PYTHONHOME/PYTHONPATH
+# apuntando a su propio Python, el nuestro cargaria la libreria equivocada y moriria.
+$accion = New-ScheduledTaskAction -Execute $pyw -Argument "-E `"$script`" --visible --log" -WorkingDirectory $PSScriptRoot
 $cada = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes $Minutos)
 $alEntrar = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
 

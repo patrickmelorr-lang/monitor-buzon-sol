@@ -35,8 +35,13 @@ INTERVALOS = {"Cada 30 minutos": 30, "Cada 1 hora": 60, "Cada 2 horas": 120}
 ESTADOS_FALLA = {"LOGIN_FALLIDO", "CAPTCHA", "CAMBIO_PAGINA", "ERROR",
                  "TIMEOUT", "SESION_ACTIVA", "VENTANA_CERRADA"}
 SIN_VENTANA = 0x08000000                              # CREATE_NO_WINDOW: oculta la consola negra
-# El robot imprime acentos y símbolos. Sin esto, el subproceso usa cp1252 (Windows) y revienta.
-ENTORNO_UTF8 = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+# Entorno para el robot. Dos cosas:
+#  - PYTHONUTF8: sin esto el subproceso usa cp1252 (Windows) y revienta al imprimir acentos.
+#  - Se quitan PYTHONHOME/PYTHONPATH: otro programa de la PC (p. ej. ZKBioTime) puede dejarlas
+#    apuntando a SU propio Python, y entonces el nuestro carga la libreria equivocada
+#    ("SRE module mismatch"). No se toca la configuracion global, solo este proceso hijo.
+ENTORNO_UTF8 = {k: v for k, v in os.environ.items() if k not in ("PYTHONHOME", "PYTHONPATH")}
+ENTORNO_UTF8.update({"PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"})
 
 
 class PanelMonitor:

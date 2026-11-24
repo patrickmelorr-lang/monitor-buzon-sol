@@ -24,6 +24,15 @@ DEL_ROBOT = ["config.py", "credenciales.py", "registro.py", "reglas.py", "robot.
 INSTALAR_BAT = r"""@echo off
 chcp 65001 >nul
 title Instalacion - Monitor Buzon SOL SUNAT
+
+rem Algunos programas (por ejemplo ZKBioTime, de control de asistencia) traen su propio
+rem Python y dejan PYTHONHOME / PYTHONPATH apuntando a el para toda la maquina. Eso hace
+rem que CUALQUIER otro Python arranque con la libreria equivocada y muera con errores como
+rem "SRE module mismatch". Se limpian SOLO para esta ventana y sus procesos hijos; la
+rem configuracion global del otro programa no se toca.
+set PYTHONHOME=
+set PYTHONPATH=
+
 echo.
 echo ==========================================================
 echo   MONITOR DE NOTIFICACIONES SUNAT - Instalacion
@@ -94,6 +103,9 @@ pause
 """
 
 ABRIR_BAT = r"""@echo off
+rem Aislar de un Python ajeno instalado por otro programa (ver INSTALAR.bat).
+set PYTHONHOME=
+set PYTHONPATH=
 cd /d "%~dp0robot"
 rem "pyw -3" usa el Python mas nuevo instalado y abre sin ventana negra.
 rem Si el lanzador no existe, se cae a pythonw del PATH.

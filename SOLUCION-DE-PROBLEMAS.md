@@ -77,7 +77,31 @@ anterior (es lo correcto, pero entonces las claves ya están cargadas).
 **Solución:** si ya instalaste antes en esta PC, no hace falta repetir este paso: abre
 directamente `abrir-monitor.bat`. Si es la primera vez, vuelve a copiar la carpeta del USB.
 
-### A7 · El antivirus bloquea el archivo
+### A7 · "SRE module mismatch" o "Failed to import the site module"
+
+El error completo menciona la carpeta de **otro programa**, por ejemplo:
+```
+Error processing line 1 of C:\ZKBioTime\Python37\Lib\site-packages\...
+Fatal Python error: init_import_site: Failed to import the site module
+AssertionError: SRE module mismatch
+```
+
+**Por qué:** hay otro programa en la PC que trae su propio Python (en este caso **ZKBioTime**,
+el control de asistencia) y dejó las variables `PYTHONHOME` o `PYTHONPATH` apuntando a su
+carpeta **para toda la máquina**. Cuando arranca cualquier otro Python, carga la librería
+equivocada y muere. No es un fallo del monitor ni de tu instalación.
+
+**Solución:** el `INSTALAR.bat` y el `abrir-monitor.bat` ya limpian esas variables solos.
+Si ejecutas comandos a mano, límpialas primero en esa ventana:
+
+```
+Remove-Item Env:PYTHONHOME,Env:PYTHONPATH -ErrorAction SilentlyContinue
+```
+
+**No borres esas variables de forma permanente** ni toques el Python del otro programa:
+lo dejarías sin funcionar. El monitor se aísla por su cuenta y ambos conviven sin problema.
+
+### A8 · El antivirus bloquea el archivo
 
 **Por qué:** algunos antivirus desconfían de los `.bat` descargados.
 
