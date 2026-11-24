@@ -41,17 +41,26 @@ if not defined PYEXE (
 )
 
 if not defined PYEXE (
-  echo [X] No encuentro un Python 3.8 o superior en esta PC.
+  echo [X] No encuentro un Python 3.8 o superior desde esta ventana.
   echo.
-  echo     Instalalo con UNO de estos metodos:
+  echo     Lo que SI encontre:
+  for /f "delims=" %%p in ('where py 2^>nul') do echo        py     -^> %%p
+  for /f "delims=" %%p in ('where python 2^>nul') do echo        python -^> %%p
+  for /f "delims=" %%v in ('python -V 2^>^&1') do echo        version: %%v
   echo.
-  echo     A^) En PowerShell como Administrador:
-  echo          winget install -e --id Python.Python.3.12
+  echo     CAUSA MAS COMUN: estas ejecutando este archivo como ADMINISTRADOR.
+  echo     Python suele instalarse "solo para mi usuario", y la cuenta de
+  echo     Administrador NO lo ve. Esta instalacion NO necesita permisos de
+  echo     administrador.
   echo.
-  echo     B^) Descargandolo de https://www.python.org/downloads/
-  echo        IMPORTANTE: marca "Add Python to PATH" al instalar.
+  echo     SOLUCION 1 ^(la mas rapida^):
+  echo        Cierra esta ventana y abre INSTALAR.bat con DOBLE CLIC normal,
+  echo        sin "Ejecutar como administrador".
   echo.
-  echo     Luego CIERRA esta ventana, abre una nueva y vuelve a ejecutar INSTALAR.bat
+  echo     SOLUCION 2 ^(si de verdad no hay Python^):
+  echo        En PowerShell normal ^(NO administrador^):
+  echo           winget install -e --id Python.Python.3.12
+  echo        Luego CIERRA la ventana, abre una nueva y repite.
   echo.
   pause
   exit /b 1
