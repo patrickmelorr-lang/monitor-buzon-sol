@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────
+#  NUNCA SUBIR A GITHUB.  Este archivo es la última barrera: si algo de
+#  aquí se publica, quedan expuestas las Claves SOL de 11 empresas.
+# ─────────────────────────────────────────────────────────────────────
+
+# Credenciales en claro
+CLAVE SOL.xlsx
+CLAVE*.xlsx
+*.cifradas
+.env
+
+# Notas de trabajo: traen chat_id de Telegram, ID personal y RUC reales
+LINKS.txt
+PROPUESTAS-NOTIFICACIONES-SUNAT.md
+
+# Documento interno para Gerencia: no se publica
+GERENCIA-RESUMEN.md
+
+# Datos del negocio (RUC, historial de notificaciones, constancias)
+REGISTRO-NOTIFICACIONES-SUNAT.xlsx
+*.xlsx
+
+# Estado y evidencias (los volcados HTML traen contenido del buzón real)
+robot/data/
+robot/logs/
+PROPUESTA-A-correo/data/
+
+# Paquete para la contadora: lleva credenciales dentro
+PORTABLE-CONTADORA/
+*.zip
+
+# Capturas con sesión abierta / razón social visible.
+# Las imágenes PÚBLICAS van en docs/img/ y deben estar censuradas (sin RUC ni razón social).
+PAGINA-INICIO*.png
+robot/images/
+*-PRIVADO.png
+*-PRIVADO.jpg
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Lista local de términos privados del guardián (nombres de empresas)
+.patrones-privados

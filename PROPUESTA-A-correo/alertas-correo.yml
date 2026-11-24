@@ -1,0 +1,47 @@
+# Propuesta A en la nube: lee el correo de alerta de SUNAT y avisa por Telegram.
+# Corre solo, sin PC encendida. SOLO para repositorio PRIVADO (lee RUC y razones sociales).
+#
+# Antes de usar, en el repo: Settings → Secrets and variables → Actions → New secret:
+#   TG_TOKEN         token del bot de Telegram
+#   TG_CHAT_ID       id del grupo
+#   CORREO_EMAIL     buzón que recibe las alertas de SUNAT
+#   CORREO_PASSWORD  app password de ese buzón (Gmail: 16 letras)
+name: Alertas SUNAT por correo
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"     # cada 15 min (GitHub puede retrasarlo en horas pico)
+  workflow_dispatch: {}         # botón para correrlo a mano
+
+concurrency:                    # nunca dos corridas a la vez
+  group: alertas-sunat
+  cancel-in-progress: false
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install openpyxl
+
+      # El anti-duplicado (data/vistos.json) debe sobrevivir entre corridas:
+      # se guarda en la caché de Actions con una clave que cambia cada vez.
+      - uses: actions/cache@v4
+        with:
+          path: robot/data
+          key: estado-${{ github.run_id }}
+          restore-keys: estado-
+
+      - name: Revisar correo y avisar
+        working-directory: robot
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          CORREO_EMAIL: ${{ secrets.CORREO_EMAIL }}
+          CORREO_PASSWORD: ${{ secrets.CORREO_PASSWORD }}
+        run: python correo.py

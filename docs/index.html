@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Buzón SOL</title>
+<meta name="description" content="Monitor automático del Buzón Electrónico SOL de SUNAT con avisos por Telegram.">
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#fff; --tinta:#1b1f24; --suave:#5b6572; --borde:#e2e6ea;
+    --azul:#1F4E78; --azul-claro:#e8eef5; --alta:#b3261e; --media:#8a6100; --baja:#1b6b3a;
+    --codigo:#f0f2f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1317; --panel:#171c22; --tinta:#e6e9ed; --suave:#9aa5b1; --borde:#2a323b;
+      --azul:#7fb0e0; --azul-claro:#1b2530; --alta:#f2857c;
+      --media:#e0b457; --baja:#7bd49f; --codigo:#1d242c;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1317; --panel:#171c22; --tinta:#e6e9ed; --suave:#9aa5b1; --borde:#2a323b;
+    --azul:#7fb0e0; --azul-claro:#1b2530; --alta:#f2857c; --media:#e0b457;
+    --baja:#7bd49f; --codigo:#1d242c;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--tinta);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .envoltura{max-width:860px; margin:0 auto; padding:0 16px 72px}
+  header{background:var(--azul); color:#fff; padding:52px 16px 44px; margin-bottom:34px}
+  header .envoltura{padding-bottom:0}
+  h1{margin:0 0 10px; font-size:clamp(1.7rem,4.5vw,2.5rem); letter-spacing:-.02em}
+  .sub{margin:0; opacity:.9; font-size:1.05rem}
+  .etiqueta{display:inline-block; background:rgba(255,255,255,.18); border-radius:999px;
+    padding:3px 12px; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase; margin-bottom:14px}
+  h2{margin:40px 0 14px; font-size:1.35rem; letter-spacing:-.01em;
+     border-bottom:2px solid var(--borde); padding-bottom:8px}
+  h3{margin:26px 0 8px; font-size:1.05rem}
+  .tarjeta{background:var(--panel); border:1px solid var(--borde); border-radius:12px;
+    padding:20px 22px; margin:16px 0}
+  .rejilla{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .paso{background:var(--panel); border:1px solid var(--borde); border-left:4px solid var(--azul);
+    border-radius:10px; padding:14px 16px}
+  .paso b{display:block; color:var(--azul); font-size:.82rem; letter-spacing:.05em;
+    text-transform:uppercase; margin-bottom:5px}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.94rem; display:block; overflow-x:auto}
+  th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--borde)}
+  th{background:var(--azul-claro); font-weight:600; white-space:nowrap}
+  code{background:var(--codigo); padding:2px 6px; border-radius:5px;
+    font:.88em ui-monospace,Consolas,"Courier New",monospace}
+  pre{background:var(--codigo); padding:14px 16px; border-radius:10px; overflow-x:auto;
+    border:1px solid var(--borde); font:.86rem/1.55 ui-monospace,Consolas,monospace}
+  .aviso{border-left:4px solid var(--media); background:var(--panel); border-radius:0 10px 10px 0;
+    padding:14px 18px; margin:18px 0}
+  .aviso.peligro{border-left-color:var(--alta)}
+  .aviso.bien{border-left-color:var(--baja)}
+  .aviso p{margin:6px 0}
+  .chat{background:var(--codigo); border:1px solid var(--borde); border-radius:12px;
+    padding:14px 16px; font-size:.92rem; margin:12px 0}
+  .chat div{margin:3px 0}
+  ul{padding-left:22px} li{margin:5px 0}
+  footer{border-top:1px solid var(--borde); margin-top:48px; padding-top:18px;
+    color:var(--suave); font-size:.87rem}
+  .flotante{position:fixed; top:14px; right:14px; background:var(--panel); color:var(--tinta);
+    border:1px solid var(--borde); border-radius:999px; padding:7px 14px; cursor:pointer; font-size:.84rem}
+</style>
+</head>
+<body>
+<button class="flotante" onclick="(()=>{const r=document.documentElement;
+  r.dataset.theme = r.dataset.theme==='dark' ? 'light' : 'dark';})()">Tema</button>
+
+<header>
+  <div class="envoltura">
+    <span class="etiqueta">Grupo Zaragoza · Tecnología</span>
+    <h1>Monitor del Buzón SOL</h1>
+    <p class="sub">Vigila los buzones electrónicos de SUNAT y avisa por Telegram cuando llega una notificación.</p>
+  </div>
+</header>
+
+<div class="envoltura">
+
+<h2>Por qué existe</h2>
+<p>
+  SUNAT deposita sus notificaciones en un <b>Buzón Electrónico SOL</b>, uno por cada empresa.
+  Lo decisivo es que <b>la notificación surte efecto el día en que se deposita</b>, la lea alguien
+  o no: los plazos para reclamar o pagar empiezan a correr desde ese momento.
+</p>
+<p>
+  Con varias empresas a cargo, revisar buzón por buzón todos los días es lento y fácil de
+  olvidar. Una resolución coactiva que pasa inadvertida puede terminar en un embargo.
+  Este monitor automatiza esa vigilancia.
+</p>
+
+<h2>Cómo funciona</h2>
+<div class="rejilla">
+  <div class="paso"><b>1 · Entra</b>Inicia sesión en el Buzón SOL de cada empresa, una por turno.</div>
+  <div class="paso"><b>2 · Mira</b>Lee solo la lista de notificaciones. Nunca las abre.</div>
+  <div class="paso"><b>3 · Compara</b>Calcula una huella única por notificación y descarta las ya vistas.</div>
+  <div class="paso"><b>4 · Avisa</b>Envía por Telegram lo nuevo y un resumen de todas las empresas.</div>
+</div>
+
+<div class="aviso bien">
+  <p><b>No altera nada en SUNAT.</b> El monitor solo mira la lista; no abre las notificaciones,
+  así que siguen apareciendo como <i>no leídas</i> en el portal. La lectura oficial la sigue
+  haciendo una persona.</p>
+</div>
+
+<h3>Lo que llega a Telegram</h3>
+<div class="chat">
+  <div>🔴 <b>ALTA · [empresa]</b></div>
+  <div>Resolución Coactiva Retención a Terceros N° 03000XXXXXXXX</div>
+  <div>Depositada: 02/11 15:53 · RESOLUCIONES DE COBRANZA</div>
+</div>
+<p>Y al terminar cada revisión, un resumen con el estado de todas las empresas:</p>
+<div class="chat">
+  <div>📋 <b>Revisión SUNAT</b> · 23/11 11:00</div>
+  <div>🔔 1 notificación nueva — revisar</div>
+  <div>&nbsp;</div>
+  <div>🔔 <b>[empresa] — 1 NUEVA</b> · revisar buzón</div>
+  <div>⚠️ [empresa] — no se pudo revisar (CAPTCHA)</div>
+  <div>✅ [empresa] — sin novedades</div>
+</div>
+
+<h2>El panel</h2>
+<p>La persona usuaria no escribe comandos: abre una ventana con botones.</p>
+<table>
+  <tr><th>Control</th><th>Qué hace</th></tr>
+  <tr><td>Lista de empresas</td><td>Casillas para elegir cuáles revisar. Vienen todas marcadas.</td></tr>
+  <tr><td>🔍 Revisar ahora</td><td>Revisa las marcadas y avisa al terminar.</td></tr>
+  <tr><td>⛔ Cancelar</td><td>Corta la revisión en curso y cierra el navegador.</td></tr>
+  <tr><td>Automático</td><td>Revisa sola cada 30 min, 1 h o 2 h.</td></tr>
+  <tr><td>Seguir aunque cierre</td><td>Deja una tarea programada de Windows.</td></tr>
+  <tr><td>Registro en vivo</td><td>Muestra qué empresa se está leyendo en cada momento.</td></tr>
+</table>
+
+<h2>Si una empresa no carga</h2>
+<div class="aviso">
+  <p><b>Es normal y no rompe nada.</b> SUNAT a veces responde lento o pide una verificación.</p>
+  <p>El monitor <b>no se detiene</b>: continúa con las demás y reintenta esa empresa en la
+  siguiente vuelta. Si alguna falla varias veces seguidas, conviene revisarla <b>sola</b>:
+  de una en una casi siempre entra.</p>
+</div>
+<p>Cada revisión queda clasificada con un estado, lo que permite distinguir un problema
+pasajero de uno que necesita atención:</p>
+<table>
+  <tr><th>Estado</th><th>Significa</th><th>¿Avisa?</th></tr>
+  <tr><td><code>OK</code></td><td>Revisada correctamente</td><td>Solo si hay algo nuevo</td></tr>
+  <tr><td><code>SESION_ACTIVA</code></td><td>Alguien está dentro de esa cuenta</td><td>No: reintenta</td></tr>
+  <tr><td><code>TIMEOUT</code></td><td>SUNAT tardó demasiado</td><td>No: reintenta</td></tr>
+  <tr><td><code>CAPTCHA</code></td><td>Pide verificación humana</td><td>Sí</td></tr>
+  <tr><td><code>LOGIN_FALLIDO</code></td><td>Credencial rechazada</td><td>Sí</td></tr>
+  <tr><td><code>CAMBIO_PAGINA</code></td><td>No se encontró la lista</td><td>Sí</td></tr>
+</table>
+
+<h2>Diseño técnico</h2>
+<table>
+  <tr><th>Pieza</th><th>Responsabilidad</th></tr>
+  <tr><td><code>config.py</code></td><td>Constantes y rutas</td></tr>
+  <tr><td><code>credenciales.py</code></td><td>Acceso a secretos</td></tr>
+  <tr><td><code>cofre.py</code></td><td>Cifrado de credenciales para transporte</td></tr>
+  <tr><td><code>sunat.py</code></td><td>Navegación del portal</td></tr>
+  <tr><td><code>reglas.py</code></td><td>Reglas del negocio tributario</td></tr>
+  <tr><td><code>registro.py</code></td><td>Persistencia en Excel y JSON</td></tr>
+  <tr><td><code>telegram.py</code></td><td>Formato y envío de avisos</td></tr>
+  <tr><td><code>robot.py</code></td><td>Orquestación</td></tr>
+  <tr><td><code>panel.py</code></td><td>Interfaz gráfica</td></tr>
+</table>
+
+<h3>Tres decisiones que sostienen el sistema</h3>
+<p><b>Identidad por contenido.</b> Cada notificación recibe una huella calculada a partir de
+empresa, fecha y asunto. Comparar huellas —en vez de contar elementos— hace que el sistema
+sea inmune a reordenamientos, paginación y borrados.</p>
+<pre>id = sha1(f"{ruc}|{fecha}|{asunto}")[:12]</pre>
+
+<p><b>Confirmar antes de dar por avisado.</b> Una notificación se marca como vista solo cuando
+el envío a Telegram fue confirmado. Si la red falla, se reintenta. Se prefiere un aviso
+repetido a un aviso perdido.</p>
+
+<p><b>Avisar los cambios, no los estados.</b> Una falla se notifica cuando aparece y cuando se
+resuelve, no en cada vuelta. Con decenas de revisiones diarias, lo contrario produciría
+cientos de mensajes idénticos y nadie los leería.</p>
+
+<h2>Seguridad</h2>
+<div class="aviso peligro">
+  <p><b>Las credenciales nunca viajan a este sitio ni a ningún repositorio.</b> Esta página es
+  únicamente documentación.</p>
+</div>
+<ul>
+  <li>Las contraseñas viven en el <b>Administrador de Credenciales de Windows</b>, cifradas por
+      la cuenta del sistema operativo. No hay contraseñas en archivos de texto ni en hojas de cálculo.</li>
+  <li>Para instalar en otra PC, las credenciales viajan <b>cifradas</b> (PBKDF2 + cifrado
+      autenticado) y la contraseña maestra se entrega por un canal distinto.</li>
+  <li>No se contrató ningún servicio externo: las credenciales tributarias <b>no salen de la organización</b>.</li>
+  <li>El monitor <b>no evade los controles de SUNAT</b>. Opera con un navegador real y visible,
+      que es el modo que el portal acepta.</li>
+</ul>
+
+<h2>Alcance</h2>
+<p>
+  Este monitor es una <b>ayuda operativa</b>. No sustituye la obligación de revisar el Buzón SOL:
+  la notificación es válida desde que SUNAT la deposita, llegue o no el aviso.
+</p>
+
+<footer>
+  Grupo Zaragoza · Área de Desarrollo y Tecnología · 2026<br>
+  Documentación pública del proyecto. No contiene datos de contribuyentes ni credenciales.
+</footer>
+</div>
+</body>
+</html>
