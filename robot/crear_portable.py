@@ -80,18 +80,29 @@ echo [1/4] Python %PYVER% encontrado.
 %PYEXE% -c "import sys; sys.exit(0 if sys.version_info>=(3,10) else 1)" >nul 2>&1
 if errorlevel 1 echo      Aviso: con Python %PYVER% funciona, pero se recomienda 3.10 o superior.
 
-echo [2/4] Instalando componentes (puede tardar unos minutos)...
-%PYEXE% -m pip install --quiet --upgrade pip
-%PYEXE% -m pip install --quiet playwright openpyxl keyring cryptography
+rem -E hace que Python ignore TODAS las variables PYTHON* del sistema. Es el seguro
+rem definitivo contra un Python ajeno impuesto por otro programa.
+echo [2/5] Creando entorno aislado propio...
+if exist "%~dp0venv" rmdir /s /q "%~dp0venv"
+%PYEXE% -E -m venv "%~dp0venv"
+if errorlevel 1 ( echo [X] No pude crear el entorno aislado. & pause & exit /b 1 )
+
+rem A partir de aqui NO se usa el Python del sistema, sino el del entorno propio:
+rem tiene sus propias librerias y no se mezcla con las de ningun otro programa.
+set VPY="%~dp0venv\Scripts\python.exe"
+
+echo [3/5] Instalando componentes (puede tardar unos minutos)...
+%VPY% -E -m pip install --quiet --upgrade pip
+%VPY% -E -m pip install --quiet playwright openpyxl keyring cryptography
 if errorlevel 1 ( echo [X] Fallo la instalacion de componentes. & pause & exit /b 1 )
 
-echo [3/4] Preparando el navegador...
-%PYEXE% -m playwright install chromium
+echo [4/5] Preparando el navegador...
+%VPY% -E -m playwright install chromium
 
-echo [4/4] Abriendo el cofre de claves...
+echo [5/5] Abriendo el cofre de claves...
 echo      Te pedira la CONTRASENA MAESTRA (te la dio el area de Tecnologia).
 cd /d "%~dp0robot"
-%PYEXE% cofre.py importar
+%VPY% -E cofre.py importar
 if errorlevel 1 ( echo [X] No se pudieron cargar las claves. & pause & exit /b 1 )
 
 echo.
@@ -107,10 +118,15 @@ rem Aislar de un Python ajeno instalado por otro programa (ver INSTALAR.bat).
 set PYTHONHOME=
 set PYTHONPATH=
 cd /d "%~dp0robot"
-rem "pyw -3" usa el Python mas nuevo instalado y abre sin ventana negra.
-rem Si el lanzador no existe, se cae a pythonw del PATH.
-pyw -3 "%~dp0robot\panel.py" 2>nul
-if errorlevel 1 start "" pythonw.exe "%~dp0robot\panel.py"
+
+rem Se usa el Python del entorno aislado que creo INSTALAR.bat. "-E" ignora las
+rem variables PYTHON* del sistema; "w" es la version sin ventana negra.
+if exist "%~dp0venv\Scripts\pythonw.exe" (
+  start "" "%~dp0venv\Scripts\pythonw.exe" -E "%~dp0robot\panel.py"
+) else (
+  echo No encuentro el entorno aislado. Ejecuta primero INSTALAR.bat
+  pause
+)
 """
 
 LEEME = """# Monitor de Notificaciones SUNAT — Guía rápida

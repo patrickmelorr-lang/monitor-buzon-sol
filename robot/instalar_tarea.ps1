@@ -14,9 +14,16 @@ if ($Quitar) {
     return
 }
 
-# pythonw.exe = Python sin ventana de consola (corre oculto)
-$pyw = & python -c "import sys,os;print(os.path.join(os.path.dirname(sys.executable),'pythonw.exe'))"
-if (-not (Test-Path $pyw)) { throw "No encontre pythonw.exe junto a python ($pyw)" }
+# pythonw.exe = Python sin ventana de consola (corre oculto).
+# Si existe el entorno aislado del paquete, se usa ESE: tiene las librerias correctas
+# y no depende del Python del sistema (que otro programa puede tener secuestrado).
+$venvPyw = Join-Path (Split-Path $PSScriptRoot -Parent) "venv\Scripts\pythonw.exe"
+if (Test-Path $venvPyw) {
+    $pyw = $venvPyw
+} else {
+    $pyw = & python -c "import sys,os;print(os.path.join(os.path.dirname(sys.executable),'pythonw.exe'))"
+}
+if (-not (Test-Path $pyw)) { throw "No encontre pythonw.exe ($pyw)" }
 $script = Join-Path $PSScriptRoot 'robot.py'
 
 # --visible: navegador REAL (no oculto). SUNAT corta el navegador oculto, por eso se usa el visible.

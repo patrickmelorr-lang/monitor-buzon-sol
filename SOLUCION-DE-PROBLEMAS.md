@@ -101,7 +101,20 @@ Remove-Item Env:PYTHONHOME,Env:PYTHONPATH -ErrorAction SilentlyContinue
 **No borres esas variables de forma permanente** ni toques el Python del otro programa:
 lo dejarías sin funcionar. El monitor se aísla por su cuenta y ambos conviven sin problema.
 
-### A8 · El antivirus bloquea el archivo
+### A8 · "No pude crear el entorno aislado"
+
+**Por qué:** el instalador crea una carpeta `venv` con su propia copia de Python. Falla si no
+hay espacio en disco, si el antivirus bloquea la escritura, o si la carpeta está en una ruta
+muy larga o en una unidad de red.
+
+**Solución:** copia la carpeta a una ruta corta del disco local, por ejemplo `C:\MonitorSUNAT`,
+y vuelve a ejecutar `INSTALAR.bat`.
+
+> **Qué es ese entorno aislado:** una carpeta con su propio Python y sus propias librerías,
+> solo para el monitor. Gracias a ella, el programa no se mezcla con el Python de ningún otro
+> software de la PC, ni se lo puede romper a él.
+
+### A9 · El antivirus bloquea el archivo
 
 **Por qué:** algunos antivirus desconfían de los `.bat` descargados.
 
