@@ -3,7 +3,7 @@
 Vigila los Buzones Electrónicos SOL de varias empresas y **avisa por Telegram** cuando SUNAT
 deposita una notificación nueva.
 
-📖 **Documentación:** [sitio del proyecto](https://USUARIO.github.io/REPOSITORIO/) ·
+📖 **Documentación:** [sitio del proyecto](https://patrickmelorr-lang.github.io/monitor-buzon-sol/) ·
 [Documentación técnica](TECNICO-NOTEBOOKLM.md)
 
 ---
