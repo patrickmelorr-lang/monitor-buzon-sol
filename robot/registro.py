@@ -4,6 +4,8 @@
 - El Excel es la vista humana. Si la contadora lo tiene abierto, las filas se encolan en
   data/pendientes.jsonl y se escriben en la siguiente corrida.
 """
+
+from __future__ import annotations
 import hashlib
 import json
 import re

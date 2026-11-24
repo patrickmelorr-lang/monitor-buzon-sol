@@ -1,4 +1,6 @@
 """Envío de mensajes por la Bot API de Telegram (sin dependencias externas)."""
+
+from __future__ import annotations
 import html
 import json
 import time

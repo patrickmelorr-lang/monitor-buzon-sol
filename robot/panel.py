@@ -9,6 +9,8 @@
 No instala nada: usa Tkinter, que viene con Python.
     python panel.py          (o doble clic en  abrir-panel.bat)
 """
+
+from __future__ import annotations
 import os
 import queue
 import subprocess

@@ -5,6 +5,8 @@ Uso (lo ejecuta una persona, una sola vez):
     python credenciales.py telegram    # pide el token del bot (oculto) y el chat_id
     python credenciales.py verificar   # dice qué RUC tienen credencial, SIN mostrar claves
 """
+
+from __future__ import annotations
 import getpass
 import os
 import sys

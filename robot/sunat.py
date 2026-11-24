@@ -2,6 +2,8 @@
 
 Regla de oro: solo se LEE la lista. Nunca se hace clic en una notificación.
 """
+
+from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass, field

@@ -1,4 +1,6 @@
 """Rutas y constantes del monitor de Buzón SOL."""
+
+from __future__ import annotations
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent          # carpeta NOTIFICACIONES-SUNAT

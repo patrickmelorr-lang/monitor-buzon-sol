@@ -8,6 +8,8 @@ Administrador de Credenciales de Windows y el archivo cifrado puede borrarse.
     python cofre.py exportar     # en TU PC: keyring -> credenciales.cifradas
     python cofre.py importar     # en la PC de la contadora: cifradas -> su keyring
 """
+
+from __future__ import annotations
 import base64
 import getpass
 import json

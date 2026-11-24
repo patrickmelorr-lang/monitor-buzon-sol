@@ -9,6 +9,8 @@
 La primera vez que se revisa un RUC, todo lo que hay en su buzón se registra SIN alertar
 (carga inicial). Desde la segunda vuelta, solo lo nuevo genera mensaje.
 """
+
+from __future__ import annotations
 import argparse
 import sys
 import time

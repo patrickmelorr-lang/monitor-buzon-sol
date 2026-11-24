@@ -7,6 +7,8 @@ Produce  PORTABLE-CONTADORA/  (y su .zip) con el programa, el Excel y las claves
 Se entrega por USB o carpeta compartida. La contraseña maestra va por otro canal.
 NUNCA subir este paquete a GitHub ni enviarlo por correo junto con la contraseña.
 """
+
+from __future__ import annotations
 import shutil
 import sys
 import zipfile
@@ -37,7 +39,23 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-echo [1/4] Python encontrado.
+for /f "tokens=2" %%v in ('python -V 2^>^&1') do set PYVER=%%v
+echo [1/4] Python %PYVER% encontrado.
+
+python -c "import sys; sys.exit(0 if sys.version_info>=(3,8) else 1)"
+if errorlevel 1 (
+  echo.
+  echo [X] Tu Python es demasiado antiguo ^(se necesita 3.8 o superior^).
+  echo     Instala una version nueva desde https://www.python.org/downloads/
+  echo     marcando "Add Python to PATH".
+  echo.
+  pause
+  exit /b 1
+)
+python -c "import sys; sys.exit(0 if sys.version_info>=(3,10) else 1)"
+if errorlevel 1 (
+  echo     Aviso: con Python %PYVER% funciona, pero se recomienda 3.10 o superior.
+)
 
 echo [2/4] Instalando componentes (puede tardar unos minutos)...
 python -m pip install --quiet --upgrade pip

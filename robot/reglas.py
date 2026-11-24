@@ -1,4 +1,6 @@
 """Reglas de negocio: qué tipo de documento es y qué tan urgente es."""
+
+from __future__ import annotations
 import re
 
 RE_TIPO_NUM = re.compile(
