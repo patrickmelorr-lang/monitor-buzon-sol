@@ -30,45 +30,50 @@ echo   MONITOR DE NOTIFICACIONES SUNAT - Instalacion
 echo ==========================================================
 echo.
 
-where python >nul 2>&1
-if errorlevel 1 (
-  echo [X] No encuentro Python en esta PC.
-  echo     Instalalo desde https://www.python.org/downloads/
-  echo     IMPORTANTE: marca la casilla "Add Python to PATH" al instalar.
-  echo.
-  pause
-  exit /b 1
+rem Puede haber VARIOS Python instalados y "python" apuntar al mas viejo.
+rem El lanzador "py -3" elige siempre el mas nuevo, asi que se prueba primero.
+set PYEXE=
+py -3 -c "import sys; sys.exit(0 if sys.version_info>=(3,8) else 1)" >nul 2>&1
+if not errorlevel 1 set PYEXE=py -3
+if not defined PYEXE (
+  python -c "import sys; sys.exit(0 if sys.version_info>=(3,8) else 1)" >nul 2>&1
+  if not errorlevel 1 set PYEXE=python
 )
-for /f "tokens=2" %%v in ('python -V 2^>^&1') do set PYVER=%%v
-echo [1/4] Python %PYVER% encontrado.
 
-python -c "import sys; sys.exit(0 if sys.version_info>=(3,8) else 1)"
-if errorlevel 1 (
+if not defined PYEXE (
+  echo [X] No encuentro un Python 3.8 o superior en esta PC.
   echo.
-  echo [X] Tu Python es demasiado antiguo ^(se necesita 3.8 o superior^).
-  echo     Instala una version nueva desde https://www.python.org/downloads/
-  echo     marcando "Add Python to PATH".
+  echo     Instalalo con UNO de estos metodos:
+  echo.
+  echo     A^) En PowerShell como Administrador:
+  echo          winget install -e --id Python.Python.3.12
+  echo.
+  echo     B^) Descargandolo de https://www.python.org/downloads/
+  echo        IMPORTANTE: marca "Add Python to PATH" al instalar.
+  echo.
+  echo     Luego CIERRA esta ventana, abre una nueva y vuelve a ejecutar INSTALAR.bat
   echo.
   pause
   exit /b 1
 )
-python -c "import sys; sys.exit(0 if sys.version_info>=(3,10) else 1)"
-if errorlevel 1 (
-  echo     Aviso: con Python %PYVER% funciona, pero se recomienda 3.10 o superior.
-)
+
+for /f "tokens=2" %%v in ('%PYEXE% -V 2^>^&1') do set PYVER=%%v
+echo [1/4] Python %PYVER% encontrado.
+%PYEXE% -c "import sys; sys.exit(0 if sys.version_info>=(3,10) else 1)" >nul 2>&1
+if errorlevel 1 echo      Aviso: con Python %PYVER% funciona, pero se recomienda 3.10 o superior.
 
 echo [2/4] Instalando componentes (puede tardar unos minutos)...
-python -m pip install --quiet --upgrade pip
-python -m pip install --quiet playwright openpyxl keyring cryptography
+%PYEXE% -m pip install --quiet --upgrade pip
+%PYEXE% -m pip install --quiet playwright openpyxl keyring cryptography
 if errorlevel 1 ( echo [X] Fallo la instalacion de componentes. & pause & exit /b 1 )
 
 echo [3/4] Preparando el navegador...
-python -m playwright install chromium
+%PYEXE% -m playwright install chromium
 
 echo [4/4] Abriendo el cofre de claves...
 echo      Te pedira la CONTRASENA MAESTRA (te la dio el area de Tecnologia).
 cd /d "%~dp0robot"
-python cofre.py importar
+%PYEXE% cofre.py importar
 if errorlevel 1 ( echo [X] No se pudieron cargar las claves. & pause & exit /b 1 )
 
 echo.
@@ -79,9 +84,12 @@ echo.
 pause
 """
 
-ABRIR_BAT = """@echo off
+ABRIR_BAT = r"""@echo off
 cd /d "%~dp0robot"
-start "" pythonw.exe "%~dp0robot\\panel.py"
+rem "pyw -3" usa el Python mas nuevo instalado y abre sin ventana negra.
+rem Si el lanzador no existe, se cae a pythonw del PATH.
+pyw -3 "%~dp0robot\panel.py" 2>nul
+if errorlevel 1 start "" pythonw.exe "%~dp0robot\panel.py"
 """
 
 LEEME = """# Monitor de Notificaciones SUNAT — Guía rápida
