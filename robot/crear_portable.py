@@ -18,8 +18,10 @@ import config
 
 DESTINO = config.RAIZ / "PORTABLE-CONTADORA"
 DEL_ROBOT = ["config.py", "credenciales.py", "registro.py", "reglas.py", "robot.py",
-             "sunat.py", "telegram.py", "panel.py", "cofre.py",
+             "sunat.py", "telegram.py", "panel.py", "cofre.py", "red.py",
              "instalar_tarea.ps1", "abrir-panel.bat"]
+RECURSOS = ["logo-panel.png", "logo-medio.png", "app.ico"]       # identidad visual del panel
+PAQUETES = "playwright openpyxl keyring cryptography ttkbootstrap truststore"
 
 INSTALAR_BAT = r"""@echo off
 chcp 65001 >nul
@@ -93,7 +95,7 @@ set VPY="%~dp0venv\Scripts\python.exe"
 
 echo [3/5] Instalando componentes (puede tardar unos minutos)...
 %VPY% -E -m pip install --quiet --upgrade pip
-%VPY% -E -m pip install --quiet playwright openpyxl keyring cryptography
+%VPY% -E -m pip install --quiet playwright openpyxl keyring cryptography ttkbootstrap truststore
 if errorlevel 1 ( echo [X] Fallo la instalacion de componentes. & pause & exit /b 1 )
 
 echo [4/5] Preparando el navegador...
@@ -191,6 +193,13 @@ def main() -> int:
         return 1
     for nombre in DEL_ROBOT:
         shutil.copy2(config.ROBOT / nombre, DESTINO / "robot" / nombre)
+    (DESTINO / "robot" / "recursos").mkdir(exist_ok=True)
+    for nombre in RECURSOS:
+        origen = config.ROBOT / "recursos" / nombre
+        if origen.exists():
+            shutil.copy2(origen, DESTINO / "robot" / "recursos" / nombre)
+        else:
+            print(f"AVISO: falta el recurso {nombre}; el panel se vera sin logotipo.")
     shutil.copy2(cifrado, DESTINO / "robot" / "credenciales.cifradas")
     shutil.copy2(config.EXCEL_REGISTRO, DESTINO / config.EXCEL_REGISTRO.name)
 

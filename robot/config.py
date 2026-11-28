@@ -40,4 +40,8 @@ URL_LOGIN = (
 
 TIMEOUT_MS = 45_000
 PAUSA_ENTRE_EMPRESAS_S = 20                             # no golpear a SUNAT con logins seguidos
+# Si una lectura no se puede verificar contra el contador de SUNAT, se reintenta en el acto
+# con más paciencia (x1, x2, x3). Casi siempre es que la página tardó más de lo previsto.
+MAX_INTENTOS = 3
+PAUSA_REINTENTO_S = 8
 HORA_LATIDO = 8                                         # resumen diario "sigo vivo" desde las 08:00

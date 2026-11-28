@@ -25,7 +25,18 @@ import reglas
 import sunat
 import telegram
 
-AVISAR_FALLA = {"LOGIN_FALLIDO", "CAPTCHA", "CAMBIO_PAGINA", "ERROR"}   # SESION_ACTIVA/TIMEOUT son pasajeros
+# SESION_ACTIVA y TIMEOUT son pasajeros y se resuelven solos en la próxima vuelta.
+# SIN_CONFIRMAR sí se avisa: significa que no pudimos verificar ese buzón y alguien
+# debería mirarlo. Callarlo sería justo el falso "todo bien" que queremos evitar.
+AVISAR_FALLA = {"LOGIN_FALLIDO", "CAPTCHA", "CAMBIO_PAGINA", "ERROR", "SIN_CONFIRMAR"}
+# Estados que mejoran con más paciencia: vale la pena reintentar en el acto.
+REINTENTAR = {"SIN_CONFIRMAR", "TIMEOUT", "CAMBIO_PAGINA", "ERROR"}
+
+
+def _prog(*campos) -> None:
+    """Línea de progreso que lee el panel para pintar la tabla en vivo.
+    Empieza con @@ para distinguirla del texto técnico."""
+    print("@@" + "|".join(str(c).replace("|", "/") for c in campos), flush=True)
 
 
 def lanzar(pw, visible: bool):
@@ -35,8 +46,14 @@ def lanzar(pw, visible: bool):
         return pw.chromium.launch(headless=not visible)                     # Chromium de Playwright
 
 
-def procesar(empresa: dict, res: sunat.Resultado, estado: dict, silencioso: bool, filas: list) -> int:
-    """Registra/alerta lo nuevo de una empresa. Devuelve cuántas notificaciones nuevas hubo."""
+def procesar(empresa: dict, res: sunat.Resultado, estado: dict, silencioso: bool,
+             filas: list, marcar_inicial: bool = True) -> int:
+    """Registra/alerta lo nuevo de una empresa. Devuelve cuántas notificaciones nuevas hubo.
+
+    marcar_inicial: solo se da por cerrada la carga inicial del RUC si la lectura fue
+    verificada. Si el primer vistazo quedó incompleto y lo diéramos por bueno, el resto
+    del historial se tomaría como "nuevo" más adelante y llenaría Telegram de avisos viejos.
+    """
     primera_vez = empresa["ruc"] not in estado["rucs"]
     callar = silencioso or primera_vez
     nuevas = 0
@@ -56,8 +73,11 @@ def procesar(empresa: dict, res: sunat.Resultado, estado: dict, silencioso: bool
                 continue                                 # no se marca como vista: se reintenta luego
         estado["ids"].add(nid)
         filas.append(registro.fila_notificacion(n, empresa, alertada))
+        _prog("NOTIF", empresa["alias"], n["fecha_txt"], n["tipo"] or "Notificación",
+              n["numero"], n["prioridad"], "silenciosa" if callar else "avisada", n["asunto"])
         nuevas += 1
-    estado["rucs"].add(empresa["ruc"])
+    if marcar_inicial:
+        estado["rucs"].add(empresa["ruc"])
     registro.guardar_estado(estado)                       # tras cada empresa: a prueba de cortes
     if callar and nuevas:
         print(f"   carga inicial silenciosa: {nuevas} registradas sin alerta")
@@ -142,38 +162,82 @@ def prueba_ultima(ruc: str | None) -> int:
     return 0 if enviados else 1
 
 
+def leer_con_reintentos(pw, a, emp: dict, cred: tuple) -> sunat.Resultado:
+    """Lee el buzón de UNA empresa, reintentando en el acto si no pudo verificarse.
+
+    Dos decisiones de diseño, nacidas de lo observado en campo:
+
+    1. Navegador NUEVO y cerrado en cada intento. Antes se compartía un solo Chrome
+       entre las 11 empresas y se iba degradando: las últimas cargaban más lento y
+       la lectura salía incompleta. Esto equivale a "hacer clic de a una".
+    2. Más paciencia en cada reintento. La causa casi siempre es que la página tardó
+       más de lo previsto, así que el 2º intento espera el doble y el 3º el triple.
+    """
+    ultimo = None
+    for intento in range(1, config.MAX_INTENTOS + 1):
+        if intento > 1:
+            print(f"   lectura no verificada, reintento {intento} con mas paciencia...", flush=True)
+            _prog("PASO", emp["alias"], f"reintento {intento} de {config.MAX_INTENTOS}")
+            time.sleep(config.PAUSA_REINTENTO_S)
+        navegador = lanzar(pw, a.visible or a.explorar)
+        try:
+            ctx = navegador.new_context(locale="es-PE", viewport={"width": 1400, "height": 900})
+            res = sunat.revisar(ctx, emp["ruc"], *cred, explorar=a.explorar, paciencia=float(intento))
+            ctx.close()
+        finally:
+            try:
+                navegador.close()                 # cerrar siempre: evita la degradación acumulada
+            except Exception:
+                pass
+        res.intentos = intento
+        ultimo = res
+        if res.confiable or res.estado not in REINTENTAR:
+            return res
+    return ultimo
+
+
 def revisar_todas(a, empresas, estado, filas_notif, filas_log, revisiones) -> bool:
     hubo_falla = False
     resumen = []                                          # una línea por empresa, para el Telegram de cierre
+    _prog("INICIO", len(empresas))
     with sync_playwright() as pw:
-        navegador = lanzar(pw, a.visible or a.explorar)
         for i, emp in enumerate(empresas):
             if i:
                 print(f"   (pausa de {config.PAUSA_ENTRE_EMPRESAS_S}s para no saturar a SUNAT)",
                       flush=True)
+                _prog("PASO", emp["alias"], "esperando turno")
                 time.sleep(config.PAUSA_ENTRE_EMPRESAS_S)
             print(f"-> [{i + 1}/{len(empresas)}] {emp['alias']} ({emp['ruc']})", flush=True)
+            _prog("EMPRESA", emp["alias"], emp["ruc"], i + 1, len(empresas))
             primera = emp["ruc"] not in estado["rucs"]    # ¿es su 1ª revisión? (antes de procesar)
             cred = credenciales.obtener_sol(emp["ruc"])
             if not cred:
                 res = sunat.Resultado("LOGIN_FALLIDO", "Sin credencial en el Administrador de Windows")
             else:
-                ctx = navegador.new_context(locale="es-PE", viewport={"width": 1400, "height": 900})
-                res = sunat.revisar(ctx, emp["ruc"], *cred, explorar=a.explorar)
-                ctx.close()
-            nuevas = procesar(emp, res, estado, a.silencioso, filas_notif) if res.estado == "OK" else 0
-            resumen.append({"alias": emp["alias"], "estado": res.estado,
-                            "total": len(res.items), "nuevas": nuevas, "primera": primera})
+                res = leer_con_reintentos(pw, a, emp, cred)
+
+            # Las notificaciones leídas son reales aunque la lectura esté incompleta,
+            # así que se registran igual; lo que NO se hace es dar por cerrada la carga
+            # inicial de un RUC cuyo primer vistazo no pudo verificarse.
+            nuevas = procesar(emp, res, estado, a.silencioso, filas_notif, res.confiable) \
+                if res.items or res.confiable else 0
+            resumen.append({"alias": emp["alias"], "estado": res.estado, "total": len(res.items),
+                            "nuevas": nuevas, "primera": primera, "esperadas": res.esperadas,
+                            "total_sunat": res.total_sunat})
             print(f"   {res.estado} · {len(res.items)} en lista · {nuevas} nuevas · "
                   f"{res.segundos}s {res.detalle}", flush=True)
+            _prog("FIN_EMPRESA", emp["alias"], res.estado, len(res.items), nuevas,
+                  res.segundos, res.intentos, res.total_sunat if res.total_sunat is not None else "",
+                  res.detalle)
             ahora = datetime.now()
             filas_log.append([ahora, emp["ruc"], emp["alias"], res.estado, len(res.items), nuevas,
-                              res.segundos, res.detalle])
-            revisiones[emp["ruc"]] = (ahora, res.estado if res.estado != "OK" else f"OK · {nuevas} nuevas")
+                              res.segundos, f"{res.detalle} (intentos: {res.intentos})"])
+            revisiones[emp["ruc"]] = (ahora, res.estado if not res.confiable
+                                      else f"{res.estado} · {nuevas} nuevas")
             # Con revisiones cada 30 min, una falla que persiste avisaría 48 veces al día:
             # se avisa solo cuando el estado CAMBIA, y otra vez cuando se recupera.
             previo = estado["ultimo"].get(emp["ruc"], "OK")
-            if res.estado != "OK":
+            if not res.confiable:
                 hubo_falla = True
                 if res.estado in AVISAR_FALLA and res.estado != previo and not a.silencioso:
                     telegram.enviar(telegram.mensaje_falla(emp, res.estado, res.detalle))
@@ -181,7 +245,6 @@ def revisar_todas(a, empresas, estado, filas_notif, filas_log, revisiones) -> bo
                 telegram.enviar(telegram.mensaje_recuperado(emp))
             estado["ultimo"][emp["ruc"]] = res.estado
             registro.guardar_estado(estado)
-        navegador.close()
 
     # Resumen de la vuelta: TODAS las empresas en un solo mensaje. Es lo que la contadora
     # mira en Telegram para saber que el robot trabajó y qué empresa tiene algo que revisar.

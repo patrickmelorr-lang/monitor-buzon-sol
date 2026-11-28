@@ -9,6 +9,9 @@ import urllib.parse
 import urllib.request
 
 import credenciales
+import red
+
+red.preparar()          # confiar en los certificados de Windows (redes con antivirus)
 
 ICONO = {"ALTA": "🔴", "MEDIA": "🟡", "BAJA": "🟢"}
 

@@ -59,6 +59,27 @@ def guardar_estado(estado: dict) -> None:
     tmp.replace(config.ESTADO_VISTOS)                      # escritura atómica
 
 
+def leer_notificaciones(limite: int = 300) -> list[dict]:
+    """Las notificaciones registradas, de la más reciente a la más antigua.
+    Alimenta la tabla del panel para que la contadora vea qué llegó sin entrar a SUNAT."""
+    try:
+        ws = openpyxl.load_workbook(config.EXCEL_REGISTRO, data_only=True)["NOTIFICACIONES"]
+    except Exception:
+        return []
+    filas = []
+    for f in ws.iter_rows(min_row=2, values_only=True):
+        if not f[0] or not f[6]:
+            continue
+        filas.append({
+            "detectada": f[1], "empresa": f[2] or "", "buzon": f[4] or "",
+            "deposito": f[5], "asunto": f[6] or "", "tipo": f[7] or "",
+            "numero": f[8] or "", "etiqueta": f[9] or "", "prioridad": f[10] or "",
+            "avisada": f[11] or "", "estado": f[13] or "",
+        })
+    filas.sort(key=lambda d: (d["deposito"] is not None, d["deposito"]), reverse=True)
+    return filas[:limite]
+
+
 def ultima_por_ruc() -> dict[str, dict]:
     """La notificación con fecha de depósito más reciente de cada RUC, según el Excel."""
     ws = openpyxl.load_workbook(config.EXCEL_REGISTRO, data_only=True)["NOTIFICACIONES"]
